@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TicTacToe</title>
+  <style>
+    ul {
+      margin: 0;
+      padding: 0;
+      list-style-type: none;
+    }
+
+    #chessboard {
+      display: flex;
+      width: 310px;
+      flex-wrap: wrap;
+    }
+
+    .chess {
+      flex: 0 0 100px;
+      height: 100px;
+      border: 1px solid #fff;
+      font-size: 100px;
+      line-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: green;
+      color: red;
+    }
+  </style>
+</head>
+
+<body>
+  <ul id="chessboard">
+  </ul>
+</body>
+
+<script>
+  // pattern 棋盘
+  // "○" 1
+  // "×" 2
+  let pattern = [
+    0, 0, 0,
+    0, 0, 0,
+    0, 0, 0
+  ]
+
+  // 当前落子
+  let chess = 1;
+
+  // 重新绘制棋盘
+  function show() {
+    const chessboard = document.querySelector("#chessboard");
+    chessboard.innerHTML = "";
+
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const li = document.createElement("li");
+        li.classList.add("chess");
+        const index = i * 3 + j;
+        li.innerText =
+          pattern[index] === 2 ? "×" :
+          pattern[index] === 1 ? "○" : "";
+
+        li.addEventListener("click", () => userMove(i, j))
+        chessboard.appendChild(li);
+      }
+    }
+  }
+
+  function userMove(i, j) {
+    const index = i * 3 + j;
+    pattern[index] = chess;
+    if (check(pattern, chess)) {
+      alert(`${chess === 1 ? "○" : "×"} is winner`);
+    }
+
+    chess = 3 - chess;
+    show();
+    computerMove();
+  }
+
+  function computerMove() {
+    const choice = bestChoice(pattern, chess);
+    if (choice.point) {
+      const [i, j] = choice.point;
+      pattern[i * 3 + j] = chess
+
+      if (check(pattern, chess)) {
+        alert(`${chess === 1 ? "○" : "×"} is winner`);
+      }
+
+      chess = 3 - chess;
+      show();
+    }
+  }
+
+  // 判断是否胜利
+  // 三行三列两斜边
+  function check(pattern, chess) {
+    // 三行
+    for (let i = 0; i < 3; i++) {
+      let win = true;
+      for (let j = 0; j < 3; j++) {
+        const currentChess = pattern[i * 3 + j];
+        if (currentChess !== chess) {
+          win = false;
+        }
+      }
+      if (win) {
+        return true;
+      }
+    }
+
+    // 三列
+    for (let j = 0; j < 3; j++) {
+      let win = true;
+      for (let i = 0; i < 3; i++) {
+        const currentChess = pattern[i * 3 + j];
+        if (currentChess !== chess) {
+          win = false;
+        }
+      }
+      if (win) {
+        return true;
+      }
+    }
+
+    // 反斜杠
+    {
+      let win = true;
+      for (let i = 0; i < 3; i++) {
+        const currentChess = pattern[i * 3 + i];
+        if (currentChess !== chess) {
+          win = false;
+        }
+      }
+      if (win) {
+        return true;
+      }
+    }
+
+    // 正斜杠
+    {
+      let win = true;
+      for (let i = 0; i < 3; i++) {
+        const currentChess = pattern[i * 3 + (2 - i)];
+        if (currentChess !== chess) {
+          win = false;
+        }
+      }
+      if (win) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+
+  function willWin(pattern, chess) {
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const index = i * 3 + j;
+        if (!pattern[index]) {
+          let clonePattern = clone(pattern);
+          clonePattern[index] = chess;
+          if (check(clonePattern, chess)) {
+            return [i, j];
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  // 最佳选择
+  function bestChoice(pattern, chess) {
+    let p = willWin(pattern, chess);
+    if (p) {
+      return {
+        point: p,
+        result: 1
+      }
+    }
+
+    let result = -2;
+    let point = null;
+    outer: for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        const index = i * 3 + j;
+        if (!pattern[index]) {
+          const clonePattern = clone(pattern);
+          clonePattern[index] = chess;
+          const r = bestChoice(clonePattern, 3 - chess).result;
+
+          if (-r > result) {
+            result = -r;
+            point = [i, j];
+          }
+
+          if (result === 1) {
+            break outer;
+          }
+        }
+      }
+    }
+
+    return {
+      point,
+      result: point ? result : 0
+    }
+  }
+
+  show();
+</script>
+
+</html>
