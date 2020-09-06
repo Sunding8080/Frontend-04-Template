@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>地图编辑器</title>
+</head>
+<style>
+  #map {
+    width: 701px;
+    font-size: 0;
+  }
+
+  .cell {
+    width: 7px;
+    height: 7px;
+    border: 1px solid gray;
+    box-sizing: border-box;
+    display: inline-block;
+    margin: 0;
+  }
+</style>
+
+<body>
+  <div id="map"></div>
+  <button onclick="saveMap()">save</button>
+</body>
+
+<script>
+  const map = localStorage["map"] ? JSON.parse(localStorage["map"]) : Array(10000).fill(0);
+
+  // 初始化地图
+  function initMap() {
+    const container = document.querySelector("#map");
+
+    for (let y = 0; y < 100; y++) {
+      for (let x = 0; x < 100; x++) {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        const index = y * 100 + x;
+
+        if (map[index] === 1) {
+          cell.style.backgroundColor = "black";
+        }
+
+        cell.addEventListener("mousemove", () => {
+          if (mouseLeft) {
+            cell.style.backgroundColor = "black";
+            map[index] = 1;
+          }
+          if (mouseRight) {
+            cell.style.backgroundColor = "";
+            map[index] = 0;
+          }
+        })
+
+        container.appendChild(cell);
+      }
+    }
+
+    let mouseLeft = false; // 按下鼠标左键
+    let mouseRight = false; // 按下鼠标右键
+
+    document.addEventListener("mousedown", (e) => {
+      mouseLeft = e.button === 0;
+      mouseRight = e.button === 2;
+    })
+
+    document.addEventListener("mouseup", () => {
+      mouseLeft = false;
+      mouseRight = false;
+    })
+
+    document.addEventListener("contextmenu", (e) => e.preventDefault());
+  }
+
+  initMap();
+
+  function saveMap() {
+    localStorage["map"] = JSON.stringify(map);
+  }
+
+  function sleep(t) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(), t);
+    })
+  }
+
+  class Sorted {
+    constructor(data, compare) {
+      this.data = data.slice();
+      this.compare = compare || ((a, b) => a - b)
+    }
+
+    take() {
+      if (!this.data.length)
+        return;
+
+      let minIndex = 0;
+      let min = this.data[0];
+      const len = this.data.length;
+
+      if (len > 1) {
+        for (let i = 1; i < len - 1; i++) {
+          if (this.compare(min, this.data[i])) {
+            min = this.data[i];
+            minIndex = i;
+          }
+        }
+      }
+      this.data[minIndex] = this.data[len - 1];
+      this.data.pop();
+      return min;
+    }
+    give(v) {
+      this.data.push(v);
+    }
+  }
+
+  // 广度优先搜索
+  async function findPath(map, start, end) {
+    const queue = [start];
+    const container = document.querySelector("#map");
+    const cloneMap = Object.create(map);
+
+    async function insert(x, y, point) {
+      // 超出范围
+      if (x < 0 || x >= 100 || y < 0 || y >= 100)
+        return
+
+      // 原点不记录，其实原点记录了也没关系，从原点出去再返回，路径不存在这样的情况
+      // if (x === start[0] && y === start[1])
+      //   return
+
+      // 已走过的坐标，不再记录
+      if (cloneMap[y * 100 + x])
+        return
+
+      await sleep(20);
+      cloneMap[y * 100 + x] = point;
+      container.children[y * 100 + x].style.backgroundColor = "lightgreen";
+
+      queue.push([x, y]);
+    }
+
+    while (queue.length) {
+      const point = [x, y] = queue.shift();
+      if (x === end[0] && y === end[1]) {
+        const paths = [end];
+        while (x !== start[0] || y !== start[1]) {
+          container.children[y * 100 + x].style.backgroundColor = "red";
+          const point = [x, y] = cloneMap[y * 100 + x];
+          await sleep(20);
+          paths.push(point);
+        }
+        container.children[y * 100 + x].style.backgroundColor = "red";
+        return paths
+      }
+
+      await insert(x, y - 1, point);
+      await insert(x, y + 1, point);
+      await insert(x - 1, y, point);
+      await insert(x + 1, y, point);
+    }
+
+    return null;
+  }
+</script>
+
+</html>
