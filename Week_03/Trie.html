@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    字典树
+  </title>
+</head>
+
+<body>
+
+</body>
+<script>
+  const $ = Symbol("$");
+
+  // 生成随机数字的字符串
+  function randomWord(length) {
+    let s = "";
+    while (length !== 0) {
+      let random = Math.random() * 26;
+      let character = String.fromCharCode(random + "a".charCodeAt(0));
+      s += character;
+      length--;
+    }
+    return s;
+  }
+
+  // 生成词典树
+  class Tire {
+    constructor() {
+      this.root = Object.create(null);
+    }
+
+    insert(word) {
+      let node = this.root;
+      for (let character of word) {
+        if (!(character in node))
+          node[character] = {};
+        node = node[character];
+      }
+      if (!node[$])
+        node[$] = 0;
+      node[$]++;
+    }
+
+    most() {
+      let maxNum = 0;
+      let maxWord = "";
+
+      const getMaxWord = (node, word) => {
+        if (node[$] && node[$] > maxNum) {
+          maxNum = node[$];
+          maxWord = word;
+        }
+        for (let key in node) {
+          getMaxWord(node[key], word + key);
+        }
+      };
+
+      getMaxWord(this.root, "");
+
+      return {
+        maxWord,
+        maxNum
+      };
+    }
+  }
+
+  const tire = new Tire();
+
+  for (let i = 0; i < 10; i++) {
+    tire.insert(randomWord(4));
+  }
+
+  for (let i = 0; i < 10; i++) {
+    tire.insert("abcd");
+  }
+
+  console.log(tire);
+  console.log(tire.most());
+</script>
+
+</html>
